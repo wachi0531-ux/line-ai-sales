@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AI営業LINE 管理画面</title>
+
+<style>
+body{
+font-family:sans-serif;
+max-width:700px;
+margin:auto;
+padding:40px
+}
+
+button{
+padding:10px 20px;
+margin-top:10px;
+font-size:16px
+}
+
+input,textarea,select{
+width:100%;
+padding:10px;
+margin-top:5px
+}
+
+.card{
+border:1px solid #ddd;
+padding:20px;
+margin-bottom:20px;
+border-radius:10px
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>AI営業LINE 管理画面</h1>
+
+<div class="card">
+<h3>自動返信</h3>
+<label>
+<input type="checkbox" id="autoReply" checked>
+自動返信ON
+</label>
+</div>
+
+<div class="card">
+<h3>返信モード</h3>
+
+<select id="mode">
+<option value="soft">やさしい</option>
+<option value="sales">営業</option>
+<option value="reserve">予約誘導</option>
+<option value="faq">FAQ</option>
+</select>
+
+</div>
+
+<div class="card">
+
+<h3>予約URL</h3>
+
+<input id="bookingUrl" placeholder="https://example.com">
+
+</div>
+
+<div class="card">
+
+<h3>商品説明</h3>
+
+<textarea id="productMessage" rows="4"></textarea>
+
+</div>
+
+<button onclick="save()">保存</button>
+
+<script>
+
+async function load(){
+
+const res = await fetch('/api/dashboard-settings')
+const data = await res.json()
+
+document.getElementById("autoReply").checked = data.autoReply
+document.getElementById("mode").value = data.promptMode
+document.getElementById("bookingUrl").value = data.bookingUrl
+document.getElementById("productMessage").value = data.productMessage
+
+}
+
+async function save(){
+
+const payload = {
+
+autoReply:document.getElementById("autoReply").checked,
+promptMode:document.getElementById("mode").value,
+bookingUrl:document.getElementById("bookingUrl").value,
+productMessage:document.getElementById("productMessage").value
+
+}
+
+await fetch('/api/dashboard-settings',{
+
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(payload)
+
+})
+
+alert("保存しました")
+
+}
+
+load()
+
+</script>
+
+</body>
+</html>
