@@ -5,111 +5,923 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI営業LINE 管理画面</title>
   <style>
-    body {
-      font-family: sans-serif;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 24px;
-      background: #f8fafc;
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #0f172a;
+      --primary-2: #111827;
+      --soft: #f1f5f9;
+      --green-bg: #dcfce7;
+      --green-text: #166534;
+      --blue-bg: #dbeafe;
+      --blue-text: #1d4ed8;
+      --amber-bg: #fef3c7;
+      --amber-text: #b45309;
     }
-    .card {
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    h1, h2 {
-      margin-top: 0;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 8px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+
+    * {
       box-sizing: border-box;
     }
-    button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      background: #111827;
-      color: white;
-      cursor: pointer;
-      margin-top: 12px;
-      margin-right: 8px;
+
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
-    .row {
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      flex-wrap: wrap;
+    }
+
+    .hero h1 {
+      margin: 10px 0 6px;
+      font-size: 32px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: var(--primary-2);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .status-bar {
+      margin-top: 16px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .stats {
+      margin-top: 20px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 16px;
     }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 10px 0 4px;
+    }
+
     .muted {
-      color: #666;
-      font-size: 14px;
+      color: var(--muted);
+      font-size: 13px;
     }
-    .status {
+
+    .main-grid {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 320px 1fr 380px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .search {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      font-size: 14px;
       margin-top: 12px;
-      font-size: 14px;
-      color: #0f766e;
     }
-    @media (max-width: 700px) {
-      .row {
+
+    .chat-list {
+      margin-top: 16px;
+      max-height: 560px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .chat-item {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: white;
+      padding: 14px;
+      cursor: pointer;
+    }
+
+    .chat-item.active {
+      background: var(--soft);
+    }
+
+    .chat-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .chat-name {
+      font-weight: 700;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-outline {
+      border-color: var(--border);
+      background: white;
+      color: var(--text);
+    }
+
+    .pill-amber {
+      background: var(--amber-bg);
+      color: var(--amber-text);
+      border-color: #fde68a;
+    }
+
+    .pill-blue {
+      background: var(--blue-bg);
+      color: var(--blue-text);
+      border-color: #bfdbfe;
+    }
+
+    .pill-green {
+      background: var(--green-bg);
+      color: var(--green-text);
+      border-color: #bbf7d0;
+    }
+
+    .pill-dark {
+      background: #111827;
+      color: white;
+    }
+
+    .conversation-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+
+    .message-list {
+      max-height: 430px;
+      overflow: auto;
+      display: grid;
+      gap: 14px;
+      padding-right: 4px;
+    }
+
+    .message-row {
+      display: flex;
+    }
+
+    .message-row.ai {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: 80%;
+      border-radius: 22px;
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.7;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      border: 1px solid var(--border);
+      background: white;
+    }
+
+    .bubble.user {
+      background: var(--soft);
+      border-color: transparent;
+    }
+
+    .bubble-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      font-size: 14px;
+      background: white;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .reply-box {
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 8px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 12px 10px;
+      border-radius: 14px;
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--soft);
+    }
+
+    .tab-panel {
+      display: none;
+      margin-top: 14px;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .subcard {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      background: white;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .footer-stats {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .template-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .faq-list {
+      max-height: 360px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (max-width: 1100px) {
+      .stats,
+      .footer-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .main-grid {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .stats,
+      .footer-stats,
+      .two-col,
+      .tabs {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 {
+        font-size: 26px;
       }
     }
   </style>
 </head>
 <body>
-  <h1>AI営業LINE 管理画面</h1>
-  <p class="muted">自動返信のON/OFF、返信モード、予約URL、商品説明を管理できます。</p>
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <div class="badge-row">
+          <span class="badge">LINE営業ダッシュボード</span>
+          <span class="badge">HTML版</span>
+          <span class="badge">AI営業ツール化 Ver2</span>
+        </div>
+        <h1>AI自動返信 管理アプリ</h1>
+        <p>自動返信のON/OFF、会話確認、FAQ管理、見込み客管理、営業導線テンプレを1画面で。</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="saveSettings()">設定を保存</button>
+        <button class="btn-secondary" onclick="loadSettings()">設定を再読込</button>
+      </div>
+    </section>
 
-  <div class="card">
-    <h2>自動返信設定</h2>
-    <label>
-      <input type="checkbox" id="autoReply" />
-      自動返信をONにする
-    </label>
-    <br /><br />
-    <label>
-      <input type="checkbox" id="humanOnly" />
-      人間対応のみ
-    </label>
+    <div id="statusBar" class="status-bar"></div>
+
+    <section class="stats">
+      <div class="card">
+        <div class="muted">自動返信</div>
+        <div id="statAutoReply" class="stat-value">ON</div>
+        <div class="muted">現在自動応答中</div>
+      </div>
+      <div class="card">
+        <div class="muted">未読件数</div>
+        <div id="statUnread" class="stat-value">3</div>
+        <div class="muted">LINE会話全体</div>
+      </div>
+      <div class="card">
+        <div class="muted">AI対応中</div>
+        <div id="statAiChats" class="stat-value">2</div>
+        <div class="muted">現在AIが返答中</div>
+      </div>
+      <div class="card">
+        <div class="muted">見込み客</div>
+        <div id="statHotLeads" class="stat-value">2</div>
+        <div class="muted">相談希望 / 成約見込み</div>
+      </div>
+      <div class="card">
+        <div class="muted">平均見込み度</div>
+        <div id="statLeadAverage" class="stat-value">78</div>
+        <div class="muted">スコアリングで優先度判断</div>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <div class="card">
+        <div class="section-title">会話一覧</div>
+        <div class="muted">AI対応する相手をここで確認</div>
+        <input id="searchInput" class="search" placeholder="名前・会話内容で検索" oninput="renderChats()" />
+        <div id="chatList" class="chat-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="conversation-header">
+          <div>
+            <div id="conversationName" class="section-title">会話を選択</div>
+            <div id="conversationMeta" class="pill-row"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-secondary" onclick="switchSelectedMode('人間対応')">人に切替</button>
+            <button class="btn-primary" onclick="switchSelectedMode('AI対応中')">AIに任せる</button>
+          </div>
+        </div>
+
+        <div id="messageList" class="message-list"></div>
+
+        <div class="reply-box">
+          <textarea id="manualReply" placeholder="ここから手動返信も可能"></textarea>
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+            <div class="muted">AI返信停止中でも、ここから人が返信できます。次段階ではLINE返信APIへ接続できます。</div>
+            <button class="btn-primary" onclick="fakeSendManualReply()">返信送信</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="control" onclick="openTab('control')">制御</button>
+          <button class="tab-btn" data-tab="prompt" onclick="openTab('prompt')">AI設定</button>
+          <button class="tab-btn" data-tab="faq" onclick="openTab('faq')">FAQ</button>
+          <button class="tab-btn" data-tab="crm" onclick="openTab('crm')">CRM</button>
+          <button class="tab-btn" data-tab="flow" onclick="openTab('flow')">営業導線</button>
+        </div>
+
+        <div id="tab-control" class="tab-panel active card">
+          <div class="section-title">自動返信制御</div>
+          <div class="muted">AI返信の切替と営業導線の調整</div>
+          <div class="stack" style="margin-top:14px;">
+            <div class="subcard">
+              <label style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+                <div>
+                  <div style="font-weight:700;">自動返信</div>
+                  <div class="muted">LINEに来たメッセージへAIが自動で返信</div>
+                </div>
+                <input id="autoReply" type="checkbox" style="width:auto;transform:scale(1.2);" />
+              </label>
+            </div>
+
+            <div class="subcard">
+              <label style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+                <div>
+                  <div style="font-weight:700;">人間対応のみ</div>
+                  <div class="muted">全部の会話を手動返信寄りで運用</div>
+                </div>
+                <input id="humanOnly" type="checkbox" style="width:auto;transform:scale(1.2);" />
+              </label>
+            </div>
+
+            <div class="subcard">
+              <div style="font-weight:700;">予約URL</div>
+              <input id="bookingUrl" placeholder="https://example.com/book" />
+              <div class="muted" style="margin-top:8px;">無料相談に誘導したいURLを設定</div>
+            </div>
+
+            <div class="subcard">
+              <div style="font-weight:700;">商品説明のひとこと</div>
+              <textarea id="productMessage"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-prompt" class="tab-panel card">
+          <div class="section-title">AI返信モード</div>
+          <div class="muted">返答トーンと目的を切り替え</div>
+          <div class="stack" style="margin-top:14px;">
+            <div class="subcard">
+              <div style="font-weight:700;margin-bottom:8px;">返信モード</div>
+              <select id="promptMode" onchange="updatePromptDescription()">
+                <option value="soft">やさしめ</option>
+                <option value="sales">営業モード</option>
+                <option value="reserve">予約誘導</option>
+                <option value="faq">FAQ重視</option>
+              </select>
+            </div>
+            <div class="subcard">
+              <div style="font-weight:700;">現在の指示</div>
+              <div id="promptDescription" class="muted" style="margin-top:8px;line-height:1.7;"></div>
+            </div>
+            <div class="subcard">
+              <div style="font-weight:700;">おすすめテンプレ</div>
+              <textarea id="promptTemplate" style="min-height:180px;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-faq" class="tab-panel card">
+          <div class="section-title">よくある質問</div>
+          <div class="muted">AIに先回りで答えさせる内容を登録</div>
+          <div class="stack" style="margin-top:14px;">
+            <div class="subcard">
+              <input id="newQ" placeholder="質問を追加" />
+              <textarea id="newA" placeholder="回答を追加" style="margin-top:10px;"></textarea>
+              <button class="btn-primary" onclick="addFaq()">FAQ追加</button>
+            </div>
+            <div id="faqList" class="faq-list"></div>
+          </div>
+        </div>
+
+        <div id="tab-crm" class="tab-panel card">
+          <div class="section-title">見込み客管理</div>
+          <div class="muted">温度感、次アクション、対応優先度を可視化</div>
+          <div class="stack" style="margin-top:14px;">
+            <div class="two-col">
+              <div class="subcard">
+                <div class="muted">平均温度感</div>
+                <div id="crmAverage" class="stat-value">78</div>
+              </div>
+              <div class="subcard">
+                <div class="muted">選択中リード</div>
+                <div id="crmSelectedScore" class="stat-value">60</div>
+              </div>
+            </div>
+            <div class="subcard">
+              <div style="font-weight:700;">選択中の見込み客ステータス</div>
+              <div id="crmDetail" class="template-list" style="margin-top:12px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-flow" class="tab-panel card">
+          <div class="section-title">営業導線テンプレ</div>
+          <div class="muted">AI営業マン化のための自動フォロー設計</div>
+          <div class="stack" style="margin-top:14px;">
+            <div class="subcard">
+              <div style="font-weight:700;">基本導線</div>
+              <div id="flowSteps" class="template-list"></div>
+            </div>
+            <div class="subcard">
+              <div style="font-weight:700;">自動フォローテンプレ</div>
+              <div id="followupList" class="template-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="footer-stats">
+      <div class="card">
+        <div class="muted">今日の動き</div>
+        <div class="stat-value">8件</div>
+        <div class="muted">AIが先に対応した会話数</div>
+      </div>
+      <div class="card">
+        <div class="muted">自動相談誘導</div>
+        <div class="stat-value">3件</div>
+        <div class="muted">無料相談につながりそうな会話</div>
+      </div>
+      <div class="card">
+        <div class="muted">人間対応待ち</div>
+        <div class="stat-value">1件</div>
+        <div class="muted">価格相談・個別相談が必要</div>
+      </div>
+      <div class="card">
+        <div class="muted">平均見込み度</div>
+        <div id="footerLeadAverage" class="stat-value">78</div>
+        <div class="muted">スコアリングで優先度を判断</div>
+      </div>
+    </section>
   </div>
-
-  <div class="card">
-    <h2>返信モード</h2>
-    <select id="promptMode">
-      <option value="soft">やさしめ</option>
-      <option value="sales">営業モード</option>
-      <option value="reserve">予約誘導</option>
-      <option value="faq">FAQ重視</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <h2>予約URL</h2>
-    <input id="bookingUrl" placeholder="https://example.com/book" />
-  </div>
-
-  <div class="card">
-    <h2>商品説明</h2>
-    <textarea id="productMessage" rows="4"></textarea>
-  </div>
-
-  <div class="card">
-    <h2>FAQ</h2>
-    <textarea id="faqJson" rows="10" placeholder='[{"q":"何ができますか？","a":"..."}]'></textarea>
-    <p class="muted">FAQはJSON形式で編集します。</p>
-  </div>
-
-  <button onclick="loadSettings()">再読込</button>
-  <button onclick="saveSettings()">保存</button>
-
-  <div id="status" class="status"></div>
 
   <script>
+    const promptModes = {
+      soft: "やさしく、共感から入り、短く親しみやすく返答する。",
+      sales: "共感→質問→提案の順で返し、無料相談や専用AI提案につなげる。",
+      reserve: "相手の困りごとを整理し、自然に無料相談予約に誘導する。",
+      faq: "簡潔にわかりやすく答え、必要に応じて詳細相談へつなげる。",
+    };
+
+    const leadScores = {
+      "興味あり": 60,
+      "相談希望": 82,
+      "成約見込み": 93,
+    };
+
+    const flowSteps = ["AI体験", "悩みヒアリング", "AI提案", "無料相談誘導", "見積 / 受注"];
+
+    const followupTemplates = [
+      {
+        title: "初回フォロー",
+        when: "登録から1日後",
+        body: "その後いかがですか？ 今の仕事でAI化したい作業があれば、無料で整理できます😊",
+      },
+      {
+        title: "事例案内",
+        when: "登録から3日後",
+        body: "実際の活用イメージが気になる方向けに、近い事例を紹介できます。必要なら送ります😊",
+      },
+      {
+        title: "相談誘導",
+        when: "温度感80以上",
+        body: "必要なら15分だけ無料相談できます。今の悩みを整理して、何を作ると早いか一緒に見ます😊",
+      },
+    ];
+
+    const chats = [
+      {
+        id: 1,
+        name: "山田設備",
+        status: "興味あり",
+        mode: "AI対応中",
+        lastAt: "10分前",
+        channel: "LINE",
+        unread: 2,
+        messages: [
+          { role: "user", text: "AIで見積書づくりって自動化できますか？", at: "09:42" },
+          { role: "ai", text: "できます😊 たとえば、入力内容から見積文面や金額整理を補助できます。今はどんな見積作業がいちばん手間ですか？", at: "09:42" },
+          { role: "user", text: "毎回文章を打ち直してます", at: "09:44" },
+          { role: "ai", text: "それなら相性いいです。テンプレ化＋AI補助でかなり楽になります。必要なら“あなた専用AI”として作ることもできます。", at: "09:44" },
+        ],
+      },
+      {
+        id: 2,
+        name: "佐藤さん",
+        status: "相談希望",
+        mode: "人間対応",
+        lastAt: "25分前",
+        channel: "LINE",
+        unread: 0,
+        messages: [
+          { role: "user", text: "料金感だけ知りたいです", at: "09:15" },
+          { role: "ai", text: "内容によりますが、ミニプラン・標準プラン・仕組み化プランの3つがあります。必要なら無料相談で整理できます😊", at: "09:16" },
+          { role: "user", text: "一度相談したいです", at: "09:17" },
+        ],
+      },
+      {
+        id: 3,
+        name: "中村工業",
+        status: "成約見込み",
+        mode: "AI対応中",
+        lastAt: "1時間前",
+        channel: "LINE",
+        unread: 1,
+        messages: [
+          { role: "user", text: "製造業向けだと何が作れますか？", at: "08:25" },
+          { role: "ai", text: "たとえば日報整理、見積補助、工程メモ整理、問い合わせ一次対応などが作れます。現場でいちばん時間がかかる作業はどこですか？", at: "08:26" },
+        ],
+      },
+    ];
+
+    let selectedId = 1;
+    let chatModes = {};
+    let currentFaq = [];
+
+    function showStatus(text, ok = true) {
+      const el = document.getElementById("statusBar");
+      el.style.display = "block";
+      el.textContent = text;
+      el.style.color = ok ? "#166534" : "#b91c1c";
+    }
+
+    function statusClass(status) {
+      if (status === "成約見込み") return "pill-green";
+      if (status === "相談希望") return "pill-blue";
+      if (status === "興味あり") return "pill-amber";
+      return "pill-outline";
+    }
+
+    function getSelectedChat() {
+      return chats.find(c => c.id === selectedId) || chats[0];
+    }
+
+    function getChatMode(chat) {
+      return chatModes[chat.id] || chat.mode;
+    }
+
+    function renderStats() {
+      const totalUnread = chats.reduce((sum, c) => sum + c.unread, 0);
+      const aiChats = chats.filter(c => getChatMode(c) === "AI対応中").length;
+      const hotLeads = chats.filter(c => c.status === "相談希望" || c.status === "成約見込み").length;
+      const averageLeadScore = Math.round(chats.reduce((sum, c) => sum + (leadScores[c.status] || 40), 0) / chats.length);
+
+      document.getElementById("statUnread").textContent = totalUnread;
+      document.getElementById("statAiChats").textContent = aiChats;
+      document.getElementById("statHotLeads").textContent = hotLeads;
+      document.getElementById("statLeadAverage").textContent = averageLeadScore;
+      document.getElementById("footerLeadAverage").textContent = averageLeadScore;
+      document.getElementById("crmAverage").textContent = averageLeadScore;
+    }
+
+    function renderChats() {
+      const q = document.getElementById("searchInput").value.trim().toLowerCase();
+      const list = document.getElementById("chatList");
+      list.innerHTML = "";
+
+      chats
+        .filter(chat => {
+          if (!q) return true;
+          return chat.name.toLowerCase().includes(q) ||
+                 chat.status.toLowerCase().includes(q) ||
+                 chat.messages.some(m => m.text.toLowerCase().includes(q));
+        })
+        .forEach(chat => {
+          const item = document.createElement("div");
+          item.className = `chat-item ${chat.id === selectedId ? "active" : ""}`;
+          item.onclick = () => {
+            selectedId = chat.id;
+            renderChats();
+            renderConversation();
+            renderCrm();
+          };
+
+          item.innerHTML = `
+            <div class="chat-top">
+              <div>
+                <div class="chat-name">${chat.name}</div>
+                <div class="muted" style="margin-top:4px;">${chat.lastAt}</div>
+              </div>
+              ${chat.unread > 0 ? `<span class="pill pill-dark">${chat.unread}</span>` : ""}
+            </div>
+            <div class="pill-row">
+              <span class="pill ${statusClass(chat.status)}">${chat.status}</span>
+              <span class="pill pill-outline">${getChatMode(chat)}</span>
+            </div>
+          `;
+
+          list.appendChild(item);
+        });
+    }
+
+    function renderConversation() {
+      const selected = getSelectedChat();
+      const selectedMode = getChatMode(selected);
+      const meta = document.getElementById("conversationMeta");
+      const messageList = document.getElementById("messageList");
+
+      document.getElementById("conversationName").textContent = selected.name;
+      meta.innerHTML = `
+        <span class="pill ${statusClass(selected.status)}">${selected.status}</span>
+        <span class="pill pill-outline">${selectedMode}</span>
+        <span class="pill pill-outline">${selected.channel}</span>
+      `;
+
+      messageList.innerHTML = "";
+      selected.messages.forEach(m => {
+        const row = document.createElement("div");
+        row.className = `message-row ${m.role === "ai" ? "ai" : "user"}`;
+        row.innerHTML = `
+          <div class="bubble ${m.role === "user" ? "user" : ""}">
+            <div class="bubble-meta">${m.role === "user" ? "ユーザー" : "AI"} · ${m.at}</div>
+            <div>${m.text}</div>
+          </div>
+        `;
+        messageList.appendChild(row);
+      });
+    }
+
+    function renderFaq() {
+      const list = document.getElementById("faqList");
+      list.innerHTML = "";
+      currentFaq.forEach(item => {
+        const box = document.createElement("div");
+        box.className = "subcard";
+        box.innerHTML = `
+          <div style="font-weight:700;">Q. ${item.q}</div>
+          <div class="muted" style="margin-top:8px;line-height:1.7;">A. ${item.a}</div>
+        `;
+        list.appendChild(box);
+      });
+    }
+
+    function renderFlow() {
+      document.getElementById("flowSteps").innerHTML = flowSteps.map((step, idx) => `
+        <div class="subcard" style="display:flex;align-items:center;gap:10px;">
+          <span class="pill pill-dark">${idx + 1}</span>
+          <span>${step}</span>
+        </div>
+      `).join("");
+
+      document.getElementById("followupList").innerHTML = followupTemplates.map(item => `
+        <div class="subcard">
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-weight:700;">${item.title}</div>
+            <span class="pill pill-outline">${item.when}</span>
+          </div>
+          <div class="muted" style="margin-top:8px;line-height:1.7;">${item.body}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderCrm() {
+      const selected = getSelectedChat();
+      const score = leadScores[selected.status] || 40;
+      const nextAction = score >= 80 ? "無料相談へ誘導" : score >= 60 ? "事例送付・悩み深掘り" : "興味分野の確認";
+      const reply = score >= 80
+        ? `必要なら15分だけ無料相談できます😊<br>${document.getElementById("bookingUrl").value || "https://example.com/book"}`
+        : "どんな作業をAIで楽にしたいか、1つだけ教えてください😊";
+
+      document.getElementById("crmSelectedScore").textContent = score;
+      document.getElementById("crmDetail").innerHTML = `
+        <div class="subcard">
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+            <div>
+              <div style="font-weight:700;">${selected.name}</div>
+              <div class="muted" style="margin-top:4px;">${selected.status} / ${getChatMode(selected)}</div>
+            </div>
+            <span class="pill pill-dark">スコア ${score}</span>
+          </div>
+        </div>
+        <div class="subcard">
+          <div style="font-weight:700;">次アクション</div>
+          <div class="muted" style="margin-top:8px;line-height:1.7;">${nextAction}</div>
+        </div>
+        <div class="subcard">
+          <div style="font-weight:700;">おすすめ返信</div>
+          <div class="muted" style="margin-top:8px;line-height:1.7;">${reply}</div>
+        </div>
+      `;
+    }
+
+    function updatePromptDescription() {
+      const mode = document.getElementById("promptMode").value;
+      document.getElementById("promptDescription").textContent = promptModes[mode] || "";
+      document.getElementById("promptTemplate").value = `あなたはLINE営業アシスタントです。\n・最初に共感\n・次に質問\n・最後に短く提案\n・相手がAI初心者でもわかる言葉で答える\n・必要なら無料相談へ誘導する\n・商品説明は「${document.getElementById("productMessage").value || "AIを教えるだけではなく、あなた専用AIを作って納品できます。"}」を軸にする`;
+    }
+
+    function openTab(tab) {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.id === `tab-${tab}`);
+      });
+    }
+
+    function switchSelectedMode(nextMode) {
+      const selected = getSelectedChat();
+      chatModes[selected.id] = nextMode;
+      showStatus(`${selected.name} を「${nextMode}」に切り替えました`);
+      renderChats();
+      renderConversation();
+      renderStats();
+      renderCrm();
+    }
+
+    function addFaq() {
+      const q = document.getElementById("newQ").value.trim();
+      const a = document.getElementById("newA").value.trim();
+      if (!q || !a) return;
+      currentFaq.unshift({ q, a });
+      document.getElementById("newQ").value = "";
+      document.getElementById("newA").value = "";
+      renderFaq();
+      showStatus("FAQを追加しました");
+    }
+
+    function fakeSendManualReply() {
+      const text = document.getElementById("manualReply").value.trim();
+      if (!text) return;
+      const selected = getSelectedChat();
+      selected.messages.push({ role: "ai", text, at: "今" });
+      document.getElementById("manualReply").value = "";
+      renderConversation();
+      showStatus("手動返信を下書き反映しました（デモ表示）");
+    }
+
     async function loadSettings() {
       try {
         const res = await fetch('/api/dashboard-settings');
@@ -120,11 +932,21 @@
         document.getElementById('promptMode').value = data.promptMode || 'sales';
         document.getElementById('bookingUrl').value = data.bookingUrl || '';
         document.getElementById('productMessage').value = data.productMessage || '';
-        document.getElementById('faqJson').value = JSON.stringify(data.faq || [], null, 2);
+        currentFaq = Array.isArray(data.faq) ? data.faq : [];
 
-        document.getElementById('status').textContent = '設定を読み込みました';
+        document.getElementById("statAutoReply").textContent = data.autoReply ? "ON" : "OFF";
+        document.getElementById("statAutoReply").nextElementSibling.textContent = data.autoReply ? "現在自動応答中" : "現在停止中";
+
+        updatePromptDescription();
+        renderFaq();
+        renderChats();
+        renderConversation();
+        renderStats();
+        renderCrm();
+        renderFlow();
+        showStatus('設定を読み込みました');
       } catch (e) {
-        document.getElementById('status').textContent = '読込に失敗しました';
+        showStatus('読込に失敗しました', false);
       }
     }
 
@@ -136,7 +958,7 @@
           promptMode: document.getElementById('promptMode').value,
           bookingUrl: document.getElementById('bookingUrl').value,
           productMessage: document.getElementById('productMessage').value,
-          faq: JSON.parse(document.getElementById('faqJson').value || '[]')
+          faq: currentFaq
         };
 
         const res = await fetch('/api/dashboard-settings', {
@@ -149,9 +971,13 @@
 
         if (!res.ok) throw new Error('save failed');
 
-        document.getElementById('status').textContent = '保存しました';
+        document.getElementById("statAutoReply").textContent = payload.autoReply ? "ON" : "OFF";
+        document.getElementById("statAutoReply").nextElementSibling.textContent = payload.autoReply ? "現在自動応答中" : "現在停止中";
+        renderCrm();
+        updatePromptDescription();
+        showStatus('保存しました');
       } catch (e) {
-        document.getElementById('status').textContent = '保存に失敗しました。FAQのJSON形式も確認してください。';
+        showStatus('保存に失敗しました', false);
       }
     }
 
