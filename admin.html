@@ -1,123 +1,682 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>AI営業LINE 管理画面</title>
+import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  MessageSquare,
+  Bot,
+  Power,
+  Users,
+  Search,
+  Settings,
+  Bell,
+  Clock3,
+  Filter,
+  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+  User,
+  Send,
+  Sparkles,
+  FileText,
+  Calendar,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
-<style>
-body{
-font-family:sans-serif;
-max-width:700px;
-margin:auto;
-padding:40px
+const initialChats = [
+  {
+    id: 1,
+    name: "山田設備",
+    status: "興味あり",
+    mode: "AI対応中",
+    lastAt: "10分前",
+    channel: "LINE",
+    unread: 2,
+    messages: [
+      { role: "user", text: "AIで見積書づくりって自動化できますか？", at: "09:42" },
+      { role: "ai", text: "できます😊 たとえば、入力内容から見積文面や金額整理を補助できます。今はどんな見積作業がいちばん手間ですか？", at: "09:42" },
+      { role: "user", text: "毎回文章を打ち直してます", at: "09:44" },
+      { role: "ai", text: "それなら相性いいです。テンプレ化＋AI補助でかなり楽になります。必要なら“あなた専用AI”として作ることもできます。", at: "09:44" },
+    ],
+  },
+  {
+    id: 2,
+    name: "佐藤さん",
+    status: "相談希望",
+    mode: "人間対応",
+    lastAt: "25分前",
+    channel: "LINE",
+    unread: 0,
+    messages: [
+      { role: "user", text: "料金感だけ知りたいです", at: "09:15" },
+      { role: "ai", text: "内容によりますが、ミニプラン・標準プラン・仕組み化プランの3つがあります。必要なら無料相談で整理できます😊", at: "09:16" },
+      { role: "user", text: "一度相談したいです", at: "09:17" },
+    ],
+  },
+  {
+    id: 3,
+    name: "中村工業",
+    status: "成約見込み",
+    mode: "AI対応中",
+    lastAt: "1時間前",
+    channel: "LINE",
+    unread: 1,
+    messages: [
+      { role: "user", text: "製造業向けだと何が作れますか？", at: "08:25" },
+      { role: "ai", text: "たとえば日報整理、見積補助、工程メモ整理、問い合わせ一次対応などが作れます。現場でいちばん時間がかかる作業はどこですか？", at: "08:26" },
+    ],
+  },
+];
+
+const faqSeed = [
+  { q: "何ができますか？", a: "文章作成AI、営業返信AI、SNS投稿AI、業務効率化AIなどを、あなたの仕事に合わせて作れます。" },
+  { q: "料金はいくらですか？", a: "内容によりますが、ミニ・標準・仕組み化の3段階で案内できます。まずは無料相談で整理する形がおすすめです。" },
+  { q: "AI初心者でも大丈夫？", a: "大丈夫です。AIを教えるだけではなく、あなた専用AIを作る形にもできます。" },
+];
+
+const promptModes = {
+  soft: "やさしく、共感から入り、短く親しみやすく返答する。",
+  sales: "共感→質問→提案の順で返し、無料相談や専用AI提案につなげる。",
+  reserve: "相手の困りごとを整理し、自然に無料相談予約に誘導する。",
+  faq: "簡潔にわかりやすく答え、必要に応じて詳細相談へつなげる。",
+};
+
+const leadScores = {
+  "興味あり": 60,
+  "相談希望": 82,
+  "成約見込み": 93,
+};
+
+const followupTemplates = [
+  {
+    title: "初回フォロー",
+    when: "登録から1日後",
+    body: "その後いかがですか？ 今の仕事でAI化したい作業があれば、無料で整理できます😊",
+  },
+  {
+    title: "事例案内",
+    when: "登録から3日後",
+    body: "実際の活用イメージが気になる方向けに、近い事例を紹介できます。必要なら送ります😊",
+  },
+  {
+    title: "相談誘導",
+    when: "温度感80以上",
+    body: "必要なら15分だけ無料相談できます。今の悩みを整理して、何を作ると早いか一緒に見ます😊",
+  },
+];
+
+function StatCard({ title, value, sub, icon: Icon }) {
+  return (
+    <Card className="rounded-2xl shadow-sm">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="mt-2 text-2xl font-bold">{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+          </div>
+          <div className="rounded-2xl border p-3">
+            <Icon className="h-5 w-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
-button{
-padding:10px 20px;
-margin-top:10px;
-font-size:16px
+function statusColor(status) {
+  if (status === "成約見込み") return "bg-green-100 text-green-700 border-green-200";
+  if (status === "相談希望") return "bg-blue-100 text-blue-700 border-blue-200";
+  if (status === "興味あり") return "bg-amber-100 text-amber-700 border-amber-200";
+  return "bg-slate-100 text-slate-700 border-slate-200";
 }
 
-input,textarea,select{
-width:100%;
-padding:10px;
-margin-top:5px
+const STORAGE_KEY = "line_ai_dashboard_settings_v1";
+const CHAT_MODE_KEY = "line_ai_dashboard_chat_modes_v1";
+
+function loadLocalSettings() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
-.card{
-border:1px solid #ddd;
-padding:20px;
-margin-bottom:20px;
-border-radius:10px
-}
-</style>
-
-</head>
-
-<body>
-
-<h1>AI営業LINE 管理画面</h1>
-
-<div class="card">
-<h3>自動返信</h3>
-<label>
-<input type="checkbox" id="autoReply" checked>
-自動返信ON
-</label>
-</div>
-
-<div class="card">
-<h3>返信モード</h3>
-
-<select id="mode">
-<option value="soft">やさしい</option>
-<option value="sales">営業</option>
-<option value="reserve">予約誘導</option>
-<option value="faq">FAQ</option>
-</select>
-
-</div>
-
-<div class="card">
-
-<h3>予約URL</h3>
-
-<input id="bookingUrl" placeholder="https://example.com">
-
-</div>
-
-<div class="card">
-
-<h3>商品説明</h3>
-
-<textarea id="productMessage" rows="4"></textarea>
-
-</div>
-
-<button onclick="save()">保存</button>
-
-<script>
-
-async function load(){
-
-const res = await fetch('/api/dashboard-settings')
-const data = await res.json()
-
-document.getElementById("autoReply").checked = data.autoReply
-document.getElementById("mode").value = data.promptMode
-document.getElementById("bookingUrl").value = data.bookingUrl
-document.getElementById("productMessage").value = data.productMessage
-
+function saveLocalSettings(data) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-async function save(){
-
-const payload = {
-
-autoReply:document.getElementById("autoReply").checked,
-promptMode:document.getElementById("mode").value,
-bookingUrl:document.getElementById("bookingUrl").value,
-productMessage:document.getElementById("productMessage").value
-
+function loadChatModes() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(CHAT_MODE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
 }
 
-await fetch('/api/dashboard-settings',{
-
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(payload)
-
-})
-
-alert("保存しました")
-
+function saveChatModes(data) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(CHAT_MODE_KEY, JSON.stringify(data));
 }
 
-load()
+export default function LineAiDashboardApp() {
+  const [autoReply, setAutoReply] = useState(true);
+  const [humanOnly, setHumanOnly] = useState(false);
+  const [promptMode, setPromptMode] = useState("sales");
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState(1);
+  const [draft, setDraft] = useState("");
+  const [bookingUrl, setBookingUrl] = useState("https://example.com/book");
+  const [productMessage, setProductMessage] = useState("AIを教えるだけではなく、あなた専用AIを作って納品できます。");
+  const [faq, setFaq] = useState(faqSeed);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [chatModes, setChatModes] = useState({});
+  const [newQ, setNewQ] = useState("");
+  const [newA, setNewA] = useState("");
 
-</script>
+  const chats = useMemo(() => {
+    const base = initialChats.filter((c) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.status.toLowerCase().includes(q) ||
+        c.messages.some((m) => m.text.toLowerCase().includes(q))
+      );
+    });
+    return base;
+  }, [search]);
 
-</body>
-</html>
+  const selected = chats.find((c) => c.id === selectedId) ?? chats[0];
+  const selectedMode = selected ? (chatModes[selected.id] ?? selected.mode) : "AI対応中";
+
+  const totalUnread = initialChats.reduce((sum, c) => sum + c.unread, 0);
+  const aiChats = initialChats.filter((c) => (chatModes[c.id] ?? c.mode) === "AI対応中").length;
+  const hotLeads = initialChats.filter((c) => c.status === "相談希望" || c.status === "成約見込み").length;
+  const averageLeadScore = Math.round(initialChats.reduce((sum, c) => sum + (leadScores[c.status] ?? 40), 0) / initialChats.length);
+  const selectedLeadScore = selected ? (leadScores[selected.status] ?? 40) : 0;
+
+  const loadSettings = async () => {
+    try {
+      setLoadingSettings(true);
+      setSaveMessage("");
+      const data = loadLocalSettings();
+      const modeData = loadChatModes();
+      if (data) {
+        if (typeof data.autoReply === "boolean") setAutoReply(data.autoReply);
+        if (typeof data.humanOnly === "boolean") setHumanOnly(data.humanOnly);
+        if (typeof data.promptMode === "string") setPromptMode(data.promptMode);
+        if (typeof data.bookingUrl === "string") setBookingUrl(data.bookingUrl);
+        if (typeof data.productMessage === "string") setProductMessage(data.productMessage);
+        if (Array.isArray(data.faq)) setFaq(data.faq);
+      }
+      if (modeData && typeof modeData === "object") setChatModes(modeData);
+      setSaveMessage(data ? "保存済み設定を読み込みました" : "初回状態です。設定を保存するとこの画面内で保持されます");
+    } catch (error) {
+      setSaveMessage("読込に失敗しました");
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    try {
+      setSavingSettings(true);
+      setSaveMessage("");
+      saveLocalSettings({
+        autoReply,
+        humanOnly,
+        promptMode,
+        bookingUrl,
+        productMessage,
+        faq,
+      });
+      saveChatModes(chatModes);
+      setSaveMessage("設定を保存しました（この試作版ではブラウザ内に保存）");
+    } catch (error) {
+      setSaveMessage("保存に失敗しました");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const switchSelectedMode = (nextMode) => {
+    if (!selected) return;
+    const next = { ...chatModes, [selected.id]: nextMode };
+    setChatModes(next);
+    saveChatModes(next);
+    setSaveMessage(`${selected.name} を「${nextMode}」に切り替えました`);
+  };
+
+  const addFaq = () => {
+    if (!newQ.trim() || !newA.trim()) return;
+    setFaq([{ q: newQ.trim(), a: newA.trim() }, ...faq]);
+    setNewQ("");
+    setNewA("");
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="mx-auto max-w-7xl p-4 md:p-6">
+        <div className="mb-6 flex flex-col gap-4 rounded-3xl border bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge className="rounded-full">LINE営業ダッシュボード</Badge>
+              <Badge variant="outline" className="rounded-full">試作版</Badge>
+            </div>
+            <h1 className="mt-3 text-2xl font-bold md:text-3xl">AI自動返信 管理アプリ</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              自動返信のON/OFF、会話確認、FAQ管理、営業メッセージ調整を1画面で。
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:flex">
+            <Button className="rounded-2xl gap-2" onClick={saveSettings} disabled={savingSettings}>
+              <Sparkles className="h-4 w-4" /> {savingSettings ? "保存中..." : "設定を保存"}
+            </Button>
+            <Button variant="outline" className="rounded-2xl gap-2" onClick={loadSettings} disabled={loadingSettings}>
+              <Calendar className="h-4 w-4" /> {loadingSettings ? "読込中..." : "設定を再読込"}
+            </Button>
+          </div>
+        </div>
+        {saveMessage && (
+          <div className="mb-6 rounded-2xl border bg-white px-4 py-3 text-sm shadow-sm">{saveMessage}</div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="自動返信" value={autoReply ? "ON" : "OFF"} sub={autoReply ? "現在自動応答中" : "現在停止中"} icon={Power} />
+          <StatCard title="未読件数" value={totalUnread} sub="LINE会話全体" icon={Bell} />
+          <StatCard title="AI対応中" value={aiChats} sub="現在AIが返答中" icon={Bot} />
+          <StatCard title="見込み客" value={hotLeads} sub="相談希望/成約見込み" icon={Users} />
+        </div>
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[320px_1fr_360px]">
+          <Card className="rounded-3xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg"><MessageSquare className="h-5 w-5" /> 会話一覧</CardTitle>
+              <CardDescription>AI対応する相手をここで確認</CardDescription>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="名前・会話内容で検索" className="rounded-2xl pl-9" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-3">
+              <ScrollArea className="h-[560px] pr-2">
+                <div className="space-y-2">
+                  {chats.map((chat) => (
+                    <button
+                      key={chat.id}
+                      onClick={() => setSelectedId(chat.id)}
+                      className={`w-full rounded-2xl border p-3 text-left transition ${selected?.id === chat.id ? "bg-slate-100" : "bg-white hover:bg-slate-50"}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{chat.name}</p>
+                            {chat.unread > 0 && <Badge className="rounded-full">{chat.unread}</Badge>}
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">{chat.lastAt}</p>
+                        </div>
+                        <ChevronRight className="mt-1 h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className={`rounded-full border px-2 py-1 text-xs ${statusColor(chat.status)}`}>{chat.status}</span>
+                        <Badge variant="outline" className="rounded-full text-xs">{chatModes[chat.id] ?? chat.mode}</Badge>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-3xl shadow-sm">
+            <CardHeader className="border-b pb-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="text-lg">{selected?.name ?? "会話を選択"}</CardTitle>
+                  <CardDescription className="mt-1 flex flex-wrap gap-2">
+                    {selected && <span className={`rounded-full border px-2 py-1 text-xs ${statusColor(selected.status)}`}>{selected.status}</span>}
+                    {selected && <Badge variant="outline" className="rounded-full">{selectedMode}</Badge>}
+                    {selected && <Badge variant="outline" className="rounded-full">{selected.channel}</Badge>}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="rounded-2xl gap-2" onClick={() => switchSelectedMode("人間対応")}> 
+                    <User className="h-4 w-4" /> 人に切替
+                  </Button>
+                  <Button className="rounded-2xl gap-2" onClick={() => switchSelectedMode("AI対応中")}>
+                    <Bot className="h-4 w-4" /> AIに任せる
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[440px] px-5 py-4">
+                <div className="space-y-4">
+                  {selected?.messages.map((m, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}
+                    >
+                      <div className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm shadow-sm ${m.role === "user" ? "bg-slate-100" : "bg-white border"}`}>
+                        <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+                          {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+                          <span>{m.role === "user" ? "ユーザー" : "AI"}</span>
+                          <span>·</span>
+                          <span>{m.at}</span>
+                        </div>
+                        <p className="leading-6">{m.text}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Separator />
+              <div className="p-4">
+                <Textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="ここから手動返信も可能"
+                  className="min-h-[100px] rounded-2xl"
+                />
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">AI返信停止中でも、ここから人が返信できます。次段階ではLINE返信APIへ接続できます。</p>
+                  <Button className="rounded-2xl gap-2"><Send className="h-4 w-4" /> 返信送信</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Tabs defaultValue="control" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-5 rounded-2xl">
+              <TabsTrigger value="control" className="rounded-2xl">制御</TabsTrigger>
+              <TabsTrigger value="prompt" className="rounded-2xl">AI設定</TabsTrigger>
+              <TabsTrigger value="faq" className="rounded-2xl">FAQ</TabsTrigger>
+              <TabsTrigger value="crm" className="rounded-2xl">CRM</TabsTrigger>
+              <TabsTrigger value="flow" className="rounded-2xl">営業導線</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="control">
+              <Card className="rounded-3xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><Settings className="h-5 w-5" /> 自動返信制御</CardTitle>
+                  <CardDescription>AI返信の切替と営業導線の調整</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="flex items-center justify-between rounded-2xl border p-4">
+                    <div>
+                      <p className="font-medium">自動返信</p>
+                      <p className="text-sm text-muted-foreground">LINEに来たメッセージへAIが自動で返信。この画面ではON/OFF状態を保存できます。</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {autoReply ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
+                      <Switch checked={autoReply} onCheckedChange={setAutoReply} />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-2xl border p-4">
+                    <div>
+                      <p className="font-medium">人間対応のみ</p>
+                      <p className="text-sm text-muted-foreground">全部の会話を手動返信寄りで運用。ONにすると選択中の会話も人間対応に切り替わります。</p>
+                    </div>
+                    <Switch checked={humanOnly} onCheckedChange={setHumanOnly} />
+                  </div>
+
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">予約URL</p>
+                    <Input className="mt-2 rounded-2xl" value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)} />
+                    <p className="mt-2 text-xs text-muted-foreground">無料相談に誘導したいURLを設定。保存すると返信文から参照できる想定です。</p>
+                  </div>
+
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">商品説明のひとこと</p>
+                    <Textarea className="mt-2 rounded-2xl" value={productMessage} onChange={(e) => setProductMessage(e.target.value)} />
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <p className="font-medium">おすすめ導線</p>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">共感 → 悩み確認 → 提案 → 無料相談</p>
+                    </div>
+                    <div className="rounded-2xl border p-4">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <p className="font-medium">注意</p>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">クレームや強い不満ワードは人間対応に切替推奨</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="prompt">
+              <Card className="rounded-3xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5" /> AI返信モード</CardTitle>
+                  <CardDescription>返答トーンと目的を切り替え</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="mb-2 text-sm font-medium">返信モード</p>
+                    <Select value={promptMode} onValueChange={setPromptMode}>
+                      <SelectTrigger className="rounded-2xl">
+                        <SelectValue placeholder="モード選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="soft">やさしめ</SelectItem>
+                        <SelectItem value="sales">営業モード</SelectItem>
+                        <SelectItem value="reserve">予約誘導</SelectItem>
+                        <SelectItem value="faq">FAQ重視</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">現在の指示</p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{promptModes[promptMode]}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">この内容は次にWebhook側の system prompt に反映できます。今は保存まで接続済みです。</p>
+                  </div>
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">おすすめテンプレ</p>
+                    <Textarea
+                      className="mt-2 min-h-[200px] rounded-2xl"
+                      defaultValue={`あなたはLINE営業アシスタントです。
+・最初に共感
+・次に質問
+・最後に短く提案
+・相手がAI初心者でもわかる言葉で答える
+・必要なら無料相談へ誘導する
+・商品説明は「${productMessage}」を軸にする`}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="faq">
+              <Card className="rounded-3xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><FileText className="h-5 w-5" /> よくある質問</CardTitle>
+                  <CardDescription>AIに先回りで答えさせる内容を登録</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-2xl border p-4">
+                    <Input placeholder="質問を追加" value={newQ} onChange={(e) => setNewQ(e.target.value)} className="rounded-2xl" />
+                    <Textarea placeholder="回答を追加" value={newA} onChange={(e) => setNewA(e.target.value)} className="mt-2 rounded-2xl" />
+                    <Button onClick={addFaq} className="mt-3 rounded-2xl">FAQ追加</Button>
+                  </div>
+
+                  <ScrollArea className="h-[360px] pr-2">
+                    <div className="space-y-3">
+                      {faq.map((item, idx) => (
+                        <div key={idx} className="rounded-2xl border p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium">Q. {item.q}</p>
+                              <p className="mt-2 text-sm leading-6 text-muted-foreground">A. {item.a}</p>
+                            </div>
+                            <Button variant="ghost" size="sm" className="rounded-xl"><Filter className="h-4 w-4" /></Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="crm">
+              <Card className="rounded-3xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5" /> 見込み客管理</CardTitle>
+                  <CardDescription>温度感、次アクション、対応優先度を可視化</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border p-4">
+                      <p className="text-sm text-muted-foreground">平均温度感</p>
+                      <p className="mt-2 text-2xl font-bold">{averageLeadScore}</p>
+                    </div>
+                    <div className="rounded-2xl border p-4">
+                      <p className="text-sm text-muted-foreground">選択中リード</p>
+                      <p className="mt-2 text-2xl font-bold">{selectedLeadScore}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">選択中の見込み客ステータス</p>
+                    {selected ? (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
+                          <div>
+                            <p className="font-medium">{selected.name}</p>
+                            <p className="text-xs text-muted-foreground">{selected.status} / {selectedMode}</p>
+                          </div>
+                          <Badge className="rounded-full">スコア {selectedLeadScore}</Badge>
+                        </div>
+                        <div className="grid gap-3">
+                          <div className="rounded-2xl border p-3">
+                            <p className="text-sm font-medium">次アクション</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {selectedLeadScore >= 80 ? "無料相談へ誘導" : selectedLeadScore >= 60 ? "事例送付・悩み深掘り" : "興味分野の確認"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border p-3">
+                            <p className="text-sm font-medium">おすすめ返信</p>
+                            <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">
+                              {selectedLeadScore >= 80
+                                ? `必要なら15分だけ無料相談できます😊
+${bookingUrl}`
+                                : "どんな作業をAIで楽にしたいか、1つだけ教えてください😊"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">会話を選ぶと詳細が出ます。</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="flow">
+              <Card className="rounded-3xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5" /> 営業導線テンプレ</CardTitle>
+                  <CardDescription>AI営業マン化のための自動フォロー設計</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">基本導線</p>
+                    <div className="mt-3 grid gap-3">
+                      {[
+                        "AI体験",
+                        "悩みヒアリング",
+                        "AI提案",
+                        "無料相談誘導",
+                        "見積 / 受注",
+                      ].map((step, idx) => (
+                        <div key={step} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 text-sm">
+                          <Badge className="rounded-full">{idx + 1}</Badge>
+                          <span>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border p-4">
+                    <p className="font-medium">自動フォローテンプレ</p>
+                    <div className="mt-3 space-y-3">
+                      {followupTemplates.map((item) => (
+                        <div key={item.title} className="rounded-2xl border p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="font-medium">{item.title}</p>
+                            <Badge variant="outline" className="rounded-full">{item.when}</Badge>
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">{item.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-4">
+          <Card className="rounded-3xl shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock3 className="h-4 w-4" /> 今日の動き</div>
+              <p className="mt-3 text-2xl font-bold">8件</p>
+              <p className="mt-1 text-sm text-muted-foreground">AIが先に対応した会話数</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-3xl shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Bot className="h-4 w-4" /> 自動相談誘導</div>
+              <p className="mt-3 text-2xl font-bold">3件</p>
+              <p className="mt-1 text-sm text-muted-foreground">無料相談につながりそうな会話</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-3xl shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="h-4 w-4" /> 人間対応待ち</div>
+              <p className="mt-3 text-2xl font-bold">1件</p>
+              <p className="mt-1 text-sm text-muted-foreground">価格相談・個別相談が必要</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-3xl shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Sparkles className="h-4 w-4" /> 平均見込み度</div>
+              <p className="mt-3 text-2xl font-bold">{averageLeadScore}</p>
+              <p className="mt-1 text-sm text-muted-foreground">スコアリングで優先度を判断</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
