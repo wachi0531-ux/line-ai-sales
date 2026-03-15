@@ -146,3 +146,55 @@ export default async function handler(req, res) {
 
   }
 }
+
+export default async function handler(req, res) {
+
+  const events = req.body.events;
+
+  for (const event of events) {
+
+    if (event.type !== "message") continue;
+    if (event.message.type !== "text") continue;
+
+    const message = event.message.text;
+
+    let replyText = "";
+
+    if (message.includes("AIプレゼント")) {
+
+      replyText =
+`AIプレゼントを用意しました😊
+
+こちらからダウンロードできます👇
+https://drive.google.com/uc?export=download&id=GOOGLE_DRIVE_FILE_ID
+
+もし使い方が分からなければ
+「AI相談」と送ってください。`;
+
+    }
+
+    if (replyText) {
+
+      await fetch("https://api.line.me/v2/bot/message/reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify({
+          replyToken: event.replyToken,
+          messages: [
+            {
+              type: "text",
+              text: replyText
+            }
+          ]
+        })
+      });
+
+    }
+
+  }
+
+  res.status(200).end();
+}
