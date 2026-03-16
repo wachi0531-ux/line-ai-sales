@@ -33,20 +33,23 @@ function buildSystemPrompt(settings) {
 専門用語を避けて、短く、やさしく答えてください。
 
 返信ルール:
-・最初に共感
-・次に質問
-・最後に提案
+- 最初に共感
+- 次に短い質問または整理
+- 最後に必要なら提案
+- 押し売りしない
+- 返信は日本語
+- 長すぎず、LINEで読みやすく
 
 現在の返信モード:
 ${modeMap[settings.promptMode] || modeMap.sales}
 
-商品説明:
+商品説明の軸:
 ${settings.productMessage}
 
 予約URL:
 ${settings.bookingUrl}
 
-FAQ:
+よくある質問:
 ${faqText}
   `.trim();
 }
@@ -60,13 +63,17 @@ async function replyToLine(replyToken, text) {
     },
     body: JSON.stringify({
       replyToken,
-      messages: [{ type: "text", text: text.slice(0, 1000) }]
+      messages: [
+        {
+          type: "text",
+          text: text.slice(0, 1000)
+        }
+      ]
     })
   });
 }
 
 export default async function handler(req, res) {
-
   if (req.method === "GET") {
     return res.status(200).send("webhook alive");
   }
@@ -76,74 +83,89 @@ export default async function handler(req, res) {
   }
 
   try {
-
     const host = req.headers.host;
-    const protocol = host.includes("localhost") ? "http" : "https";
+    const protocol = host?.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${host}`;
-
     const settings = await getSettings(baseUrl);
 
     const events = req.body?.events ?? [];
 
-    for (const event of events) {
+    // Google DriveのファイルIDを入れる
+    const PRESENT_FILE_ID = "1-wYpxX_Ha77WHoOqq1kMz-dYGyokqtw5";
+    const PRESENT_URL = `https://drive.google.com/uc?export=download&id=${PRESENT_FILE_ID}`;
 
+    for (const event of events) {
       if (event.type !== "message") continue;
       if (event.message?.type !== "text") continue;
 
-      if (!settings.autoReply || settings.humanOnly) {
+      const userMessage = (event.message.text || "").trim();
 
+      // ① AIプレゼント分岐
+      if (userMessage.includes("AIプレゼント")) {
+        await replyToLine(
+          event.replyToken,
+          `AIプレゼントを用意しました😊
+
+こちらからダウンロードできます👇
+${PRESENT_URL}
+
+もし使い方が分からなければ
+「AI相談」と送ってください。`
+        );
+        continue;
+      }
+
+      // ② 自動返信OFF or 人間対応のみ
+      if (!settings.autoReply || settings.humanOnly) {
         await replyToLine(
           event.replyToken,
           "現在は手動対応中です😊 少しお待ちください。"
         );
-
         continue;
       }
 
-      const userMessage = event.message.text;
-
-      const aiResponse = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: "gpt-4.1-mini",
-            messages: [
-              {
-                role: "system",
-                content: buildSystemPrompt(settings)
-              },
-              {
-                role: "user",
-                content: userMessage
-              }
-            ],
-            temperature: 0.7
-          })
-        }
-      );
+      // ③ それ以外は今まで通りAI返信
+      const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-mini",
+          messages: [
+            {
+              role: "system",
+              content: buildSystemPrompt(settings)
+            },
+            {
+              role: "user",
+              content: userMessage
+            }
+          ],
+          temperature: 0.7
+        })
+      });
 
       const aiData = await aiResponse.json();
-
-      const replyText =
+      let replyText =
         aiData.choices?.[0]?.message?.content ||
-        "すみません、今うまく返答できませんでした。";
+        "すみません、今うまく返答できませんでした。もう一度送ってください。";
+
+      if (
+        settings.promptMode === "reserve" &&
+        settings.bookingUrl &&
+        !replyText.includes(settings.bookingUrl)
+      ) {
+        replyText += `\n\n無料相談はこちらです😊\n${settings.bookingUrl}`;
+      }
 
       await replyToLine(event.replyToken, replyText);
     }
 
     return res.status(200).send("ok");
-
   } catch (error) {
-
     console.error(error);
-
     return res.status(500).send("server error");
-
   }
 }
-
