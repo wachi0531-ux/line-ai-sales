@@ -147,11 +147,11 @@ export default async function handler(req, res) {
     const PRESENT_FILE_ID = "1-wYpxX_Ha77WHoOqq1kMz-dYGyokqtw5";
 
     // 2) AI金門 → KINMON ORACLE（金運モンスター神託）
-    const KINMON_FILE_ID = "ここにKINMONのファイルID";
+    const KINMON_FILE_ID = "1246XcPOCpDbKATOu91HKLCjjtNIUhdTV";
 
     // 3) AIプレゼント全 → 全プレゼント一覧ページ or フォルダURL
     // DriveフォルダでもLPページでもOK
-    const ALL_PRESENTS_URL = "https://drive.google.com/drive/folders/ここに全体フォルダID";
+    const ALL_PRESENTS_URL = "https://drive.google.com/drive/folders/16VR-2fyLiJriaj_kBHj_n4PNv5jnCmy5?usp=sharing";
 
     const urls = {
       present: `https://drive.google.com/uc?export=download&id=${PRESENT_FILE_ID}`,
