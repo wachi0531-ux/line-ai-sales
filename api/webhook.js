@@ -39,6 +39,8 @@ function buildSystemPrompt(settings) {
 - 押し売りしない
 - 返信は日本語
 - 長すぎず、LINEで読みやすく
+- 必要なら改行して見やすくする
+- AIプレゼント、鑑定、相談、予約の流れを自然につなぐ
 
 現在の返信モード:
 ${modeMap[settings.promptMode] || modeMap.sales}
@@ -66,11 +68,61 @@ async function replyToLine(replyToken, text) {
       messages: [
         {
           type: "text",
-          text: text.slice(0, 1000)
+          text: String(text || "").slice(0, 1000)
         }
       ]
     })
   });
+}
+
+function normalizeText(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[！!]/g, "!")
+    .replace(/[？?]/g, "?");
+}
+
+function includesAny(text, keywords = []) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function buildPresentReply(type, urls) {
+  switch (type) {
+    case "all":
+      return `AIプレゼント一覧をどうぞ😊
+
+▼ 全てまとめて受け取る
+${urls.all}
+
+個別でも受け取れます👇
+・AIプレゼント
+・AI金門
+・AIプレゼント全
+
+使い方が分からなければ
+「AI相談」と送ってください。`;
+
+    case "kinmon":
+      return `AI金門をご用意しました😊
+
+【KINMON ORACLE（金運モンスター神託）】
+${urls.kinmon}
+
+他のAIプレゼントも見たい場合は
+「AIプレゼント全」と送ってください。`;
+
+    case "present":
+    default:
+      return `AIプレゼントをご用意しました😊
+
+【宇宙三命鑑定】
+${urls.present}
+
+他のAIプレゼントも見たい場合は
+「AIプレゼント全」と送ってください。`;
+  }
 }
 
 export default async function handler(req, res) {
@@ -90,32 +142,108 @@ export default async function handler(req, res) {
 
     const events = req.body?.events ?? [];
 
-    // Google DriveのファイルIDを入れる
+    // ===== Google Drive ファイルID / フォルダURL を設定 =====
+    // 1) AIプレゼント → 宇宙三命鑑定
     const PRESENT_FILE_ID = "1-wYpxX_Ha77WHoOqq1kMz-dYGyokqtw5";
-    const PRESENT_URL = `https://drive.google.com/uc?export=download&id=${PRESENT_FILE_ID}`;
+
+    // 2) AI金門 → KINMON ORACLE（金運モンスター神託）
+    const KINMON_FILE_ID = "ここにKINMONのファイルID";
+
+    // 3) AIプレゼント全 → 全プレゼント一覧ページ or フォルダURL
+    // DriveフォルダでもLPページでもOK
+    const ALL_PRESENTS_URL = "https://drive.google.com/drive/folders/ここに全体フォルダID";
+
+    const urls = {
+      present: `https://drive.google.com/uc?export=download&id=${PRESENT_FILE_ID}`,
+      kinmon: `https://drive.google.com/uc?export=download&id=${KINMON_FILE_ID}`,
+      all: ALL_PRESENTS_URL
+    };
 
     for (const event of events) {
       if (event.type !== "message") continue;
       if (event.message?.type !== "text") continue;
 
-      const userMessage = (event.message.text || "").trim();
+      const rawUserMessage = event.message.text || "";
+      const userMessage = rawUserMessage.trim();
+      const normalized = normalizeText(userMessage);
 
+      // =========================
       // ① AIプレゼント分岐
-      if (userMessage.includes("AIプレゼント")) {
+      // =========================
+
+      // AIプレゼント全 / 全て / ぜんぶ
+      if (
+        includesAny(normalized, [
+          "aiプレゼント全",
+          "aiﾌﾟﾚｾﾞﾝﾄ全",
+          "全て",
+          "ぜんぶ",
+          "全部",
+          "all"
+        ])
+      ) {
+        await replyToLine(event.replyToken, buildPresentReply("all", urls));
+        continue;
+      }
+
+      // AI金門 / KINMON / KINMON ORACLE
+      if (
+        includesAny(normalized, [
+          "ai金門",
+          "金門",
+          "kinmon",
+          "kinmonoracle",
+          "金運モンスター神託"
+        ])
+      ) {
+        await replyToLine(event.replyToken, buildPresentReply("kinmon", urls));
+        continue;
+      }
+
+      // AIプレゼント / 宇宙三命鑑定
+      if (
+        includesAny(normalized, [
+          "aiプレゼント",
+          "aiﾌﾟﾚｾﾞﾝﾄ",
+          "宇宙三命鑑定",
+          "宇宙鑑定"
+        ])
+      ) {
+        await replyToLine(event.replyToken, buildPresentReply("present", urls));
+        continue;
+      }
+
+      // メニュー表示
+      if (
+        includesAny(normalized, [
+          "メニュー",
+          "menu",
+          "ai一覧",
+          "プレゼント一覧"
+        ])
+      ) {
         await replyToLine(
           event.replyToken,
-          `AIプレゼントを用意しました😊
+          `受け取れるAIはこちらです😊
 
-こちらからダウンロードできます👇
-${PRESENT_URL}
+【送るキーワード】
+・AIプレゼント
+→ 宇宙三命鑑定
 
-もし使い方が分からなければ
-「AI相談」と送ってください。`
+・AI金門
+→ KINMON ORACLE（金運モンスター神託）
+
+・AIプレゼント全
+→ 全てまとめて受け取り
+
+気になるキーワードをそのまま送ってください。`
         );
         continue;
       }
 
-      // ② 自動返信OFF or 人間対応のみ
+      // =========================
+      // ② 自動返信OFF / 人間対応のみ
+      // =========================
       if (!settings.autoReply || settings.humanOnly) {
         await replyToLine(
           event.replyToken,
@@ -124,7 +252,9 @@ ${PRESENT_URL}
         continue;
       }
 
-      // ③ それ以外は今まで通りAI返信
+      // =========================
+      // ③ それ以外はAI返信
+      // =========================
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -148,8 +278,9 @@ ${PRESENT_URL}
       });
 
       const aiData = await aiResponse.json();
+
       let replyText =
-        aiData.choices?.[0]?.message?.content ||
+        aiData?.choices?.[0]?.message?.content ||
         "すみません、今うまく返答できませんでした。もう一度送ってください。";
 
       if (
