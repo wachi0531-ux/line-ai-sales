@@ -144,14 +144,14 @@ export default async function handler(req, res) {
 
     // ===== Google Drive ファイルID / フォルダURL を設定 =====
     // 1) AIプレゼント → 宇宙三命鑑定
-    const PRESENT_FILE_ID = "1-wYpxX_Ha77WHoOqq1kMz-dYGyokqtw5";
+    const PRESENT_FILE_ID = "1S3hXzhNufwrSu3BU-87P-qBeHErYOgjC";
 
     // 2) AI金門 → KINMON ORACLE（金運モンスター神託）
-    const KINMON_FILE_ID = "1246XcPOCpDbKATOu91HKLCjjtNIUhdTV";
+    const KINMON_FILE_ID = "1WJxWcvp7moJFx1X38MPzAAfuzG5ewLrA";
 
     // 3) AIプレゼント全 → 全プレゼント一覧ページ or フォルダURL
     // DriveフォルダでもLPページでもOK
-    const ALL_PRESENTS_URL = "https://drive.google.com/drive/folders/16VR-2fyLiJriaj_kBHj_n4PNv5jnCmy5?usp=sharing";
+    const ALL_PRESENTS_URL = "https://drive.google.com/drive/folders/16VR-2fyLiJriaj_kBHj_n4PNv5jnCmy5?usp=drive_link";
 
     const urls = {
       present: `https://drive.google.com/uc?export=download&id=${PRESENT_FILE_ID}`,
