@@ -1,9 +1,7 @@
 {
-  "name": "line-ai-sales",
+  "name": "line-ai-system",
   "version": "1.0.0",
-  "type": "module"
-}
-{
+  "type": "module",
   "dependencies": {
     "googleapis": "^126.0.0"
   }
