@@ -36,8 +36,12 @@ export default function DiagnosisPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="mb-6 text-2xl font-bold">無料診断フォーム</h1>
-      <form action={handleSubmit} className="space-y-6 rounded-xl border border-slate-200 p-6 shadow-sm">
+      <p className="text-sm font-semibold text-brand-600">AI活用無料診断</p>
+      <h1 className="mt-2 text-2xl font-bold">無料診断フォーム</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        入力は3分ほどです。LINEユーザーIDを入力すると、診断完了後に結果をLINEにも自動送信します。
+      </p>
+      <form action={handleSubmit} className="mt-6 space-y-6 rounded-xl border border-slate-200 p-6 shadow-sm">
         <input name="name" required placeholder="名前" className="w-full rounded border p-3" />
         <input name="email" type="email" required placeholder="メールアドレス" className="w-full rounded border p-3" />
 
@@ -45,6 +49,18 @@ export default function DiagnosisPage() {
         <Select name="ai_experience" label="AIを使ったことはありますか？" options={aiExperiences} />
         <Select name="automation_interest" label="自動化したいこと" options={automationInterests} />
         <Select name="consultation_interest" label="個別相談に興味はありますか？" options={consultationInterests} />
+
+        <label className="block">
+          <span className="mb-2 block text-sm font-medium">LINEユーザーID（任意）</span>
+          <input
+            name="line_user_id"
+            placeholder="例：Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            className="w-full rounded border p-3"
+          />
+          <span className="mt-2 block text-xs leading-5 text-slate-500">
+            フェーズ2ではテスト用入力欄です。後ほどLIFFやWebhookで自動取得できる形に拡張できます。
+          </span>
+        </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

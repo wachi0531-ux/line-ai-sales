@@ -1,16 +1,22 @@
 import { z } from 'zod';
-import { FormData, DiagnosisType } from '@/types/diagnosis';
+import { DiagnosisFormData, DiagnosisType } from '@/types/diagnosis';
+
+const optionalTrimmedString = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().max(128, 'LINEユーザーIDは128文字以内で入力してください').optional()
+);
 
 export const diagnosisSchema = z.object({
-  name: z.string().min(1, '名前を入力してください'),
-  email: z.string().email('メールアドレスの形式が正しくありません'),
+  name: z.string().trim().min(1, '名前を入力してください'),
+  email: z.string().trim().email('メールアドレスの形式が正しくありません'),
   problem: z.enum(['集客', '売上', '作業時間', '顧客管理', 'SNS発信']),
   ai_experience: z.enum(['ある', '少しある', 'ない']),
   automation_interest: z.enum(['LINE配信', 'メール配信', 'SNS投稿', '顧客管理', '決済後の案内']),
-  consultation_interest: z.enum(['ある', '少しある', '今は情報だけ欲しい'])
+  consultation_interest: z.enum(['ある', '少しある', '今は情報だけ欲しい']),
+  line_user_id: optionalTrimmedString
 });
 
-export const getDiagnosisType = (data: FormData): DiagnosisType => {
+export const getDiagnosisType = (data: DiagnosisFormData): DiagnosisType => {
   if (data.problem === '集客' || data.problem === '売上' || data.automation_interest === 'SNS投稿') {
     return 'A';
   }

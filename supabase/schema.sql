@@ -6,6 +6,10 @@ create table if not exists public.diagnosis_leads (
   ai_experience text not null,
   automation_interest text not null,
   consultation_interest text not null,
+  line_user_id text,
   diagnosis_type text not null,
+  line_message_status text,
+  line_message_error text,
+  line_message_sent_at timestamptz,
   created_at timestamptz not null default now()
 );
