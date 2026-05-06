@@ -11,5 +11,10 @@ create table if not exists public.diagnosis_leads (
   line_message_status text,
   line_message_error text,
   line_message_sent_at timestamptz,
+  stripe_checkout_session_id text,
+  stripe_payment_intent_id text,
+  payment_status text,
+  payment_completed_at timestamptz,
+  member_page_url text,
   created_at timestamptz not null default now()
 );
